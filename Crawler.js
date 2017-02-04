@@ -57,7 +57,7 @@ function classA(body) {
             name: "" + year + "",
             data: data
         };
-        if (year < 1989) {
+        if (year < 2016) {
             num = 0;
             movie = 0;
             year += 1;
