@@ -4,23 +4,20 @@
 var fs = require("fs");
 var request = require("request");
 var cheerio = require("cheerio");
-var xlsx = require("node-xlsx");
 var sd = require('silly-datetime');
 var MongoClient = require('mongodb').MongoClient
     , assert = require('assert');
 var url = 'mongodb://localhost:27017/node';
 var startTime = sd.format(new Date(), 'YYYY-MM-DD HH:mm');
-var movie = 0, s = 0, num = 0, ttt = 0, year = 1950;
-var data = [];
-var obj = [];
+var num = 0, ttt = 0, year = 1950;
 var node = [];
 
-var insertDocuments = function(db , node) {
+var insertDocuments = function (db, node) {
     // Get the documents collection
     var collection = db.collection('pachong');
     // Insert some documents
-    collection.insertMany(node, function(err, result) {
-        node.splice(0,node.length);
+    collection.insertMany(node, function (err, result) {
+        node.splice(0, node.length);
     });
 }
 
@@ -40,12 +37,15 @@ function classA(body) {
                         var $ = cheerio.load(body);
                         var time = $("span[property='v:initialReleaseDate']").text();
                         var film = $("span[property='v:itemreviewed']").text();
+                        var imdb = $("#info a[rel='nofollow']").text();
                         var rating_num = $(".rating_num").text();
-                        data[movie] = [movie, film, time, rating_num];
-                        node.push({film:film,time:time,rating_num:rating_num});
-                        console.log(data[movie]);
-                        movie += 1;
+                        node.push({film: film, time: time, imdb: imdb, rating_num: rating_num, year: year});
+                        console.log(node[ttt]);
                         ttt += 1;
+                        setTimeout(function () {
+                            classB();
+                        }, 500);
+                    } else {
                         setTimeout(function () {
                             classB();
                         }, 500);
@@ -53,9 +53,9 @@ function classA(body) {
                 })
             } else {
                 ttt = 0;
-                MongoClient.connect(url, function(err, db) {
+                MongoClient.connect(url, function (err, db) {
                     // assert.equal(null, err);
-                    insertDocuments(db ,node);
+                    insertDocuments(db, node);
                     db.close();
                 });
                 setTimeout(function () {
@@ -66,19 +66,11 @@ function classA(body) {
 
         classB();
     } else if ($("a").hasClass("nbg") == false) {
-        obj[s] = {
-            name: "" + year + "",
-            data: data
-        };
         if (year < 2016) {
             num = 0;
-            movie = 0;
             year += 1;
-            s += 1;
-            data = [];
             req("https://movie.douban.com/tag/" + year + "?start=0&type=T");
         } else {
-            fs.writeFileSync("sss.xlsx", xlsx.build(obj), "binary");
             var endTime = sd.format(new Date(), 'YYYY-MM-DD HH:mm');
             console.log("开始时间：" + startTime);
             console.log("结束时间：" + endTime);
@@ -91,6 +83,8 @@ function req(url) {
     request(url, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             classA(body);
+        } else {
+            req(url);
         }
     })
 }
